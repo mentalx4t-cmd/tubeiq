@@ -23,11 +23,12 @@ export function Layout({ children, user, activeTab, setActiveTab, onLogout }: La
   ];
 
   return (
-    <div className="min-h-screen bg-[#0A0B10] text-[#E2E8F0] font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#0A0B10] text-[#E2E8F0] font-sans">
       <header className="sticky top-0 z-40 bg-[#0A0B10]/80 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
+
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
               <Youtube className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
@@ -57,7 +58,7 @@ export function Layout({ children, user, activeTab, setActiveTab, onLogout }: La
             <div className="relative">
               <button
                 onClick={() => setShowMenu(!showMenu)}
-                className="flex items-center gap-2 p-1 rounded-full hover:ring-2 hover:ring-blue-500/40 transition-all"
+                className="flex items-center gap-2 p-1 rounded-full"
               >
                 <img
                   src={user.photoURL || ''}
@@ -83,6 +84,7 @@ export function Layout({ children, user, activeTab, setActiveTab, onLogout }: La
               )}
             </div>
           </div>
+
         </div>
       </header>
 
@@ -90,25 +92,6 @@ export function Layout({ children, user, activeTab, setActiveTab, onLogout }: La
         {children}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-[#15161D]/80 backdrop-blur-2xl border-t border-white/5 p-4 flex items-center justify-around">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "flex flex-col items-center gap-1 transition-all",
-              activeTab === tab.id ? "text-blue-500" : "text-gray-500"
-            )}
-          >
-            <tab.icon className="w-6 h-6" />
-            <span className="text-[10px] uppercase tracking-widest font-bold">{tab.label}</span>
-          </button>
-        ))}
-      </nav>
-    </div>
-  );
-}
-      {/* Mobile Bottom Bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-[#15161D]/80 backdrop-blur-2xl border-t border-white/5 p-4 flex items-center justify-around">
         {tabs.map((tab) => (
           <button
