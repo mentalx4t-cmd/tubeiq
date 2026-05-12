@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { auth, googleProvider } from './lib/firebase';
-import { signInWithPopup, onAuthStateChanged, User, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { signInWithRedirect, signInWithPopup, getRedirectResult, onAuthStateChanged, User, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { Layout } from './components/Layout';
 import { Home } from './components/tabs/Home';
 import { Trending } from './components/tabs/Trending';
@@ -16,7 +16,7 @@ export default function App() {
   const [accessToken, setAccessToken] = useState<string | null>(localStorage.getItem('yt_access_token'));
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
-  const [authStep, setAuthStep] = useState<'login' | 'youtube'>(user ? 'youtube' : 'login');
+  const [authStep, setAuthStep] = useState<'login' | 'youtube'>('login');
 
   useEffect(() => {
     const handleTokenUpdate = (event: any) => {
@@ -27,6 +27,19 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Handle redirect result when user comes back
+    getRedirectResult(auth).then((result) => {
+      if (result) {
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential?.accessToken) {
+          setAccessToken(credential.accessToken);
+          localStorage.setItem('yt_access_token', credential.accessToken);
+        }
+      }
+    }).catch((error) => {
+      console.error('Redirect result error:', error);
+    });
+
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
       if (u) setAuthStep('youtube');
@@ -37,11 +50,25 @@ export default function App() {
 
   const handleLogin = async () => {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      if (credential?.accessToken) {
-        setAccessToken(credential.accessToken);
-        localStorage.setItem('yt_access_token', credential.accessToken);
+      // Try popup first, fall back to redirect on mobile
+      try {
+        const result = await signInWithPopup(auth, googleProvider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential?.accessToken) {
+          setAccessToken(credential.accessToken);
+          localStorage.setItem('yt_access_token', credential.accessToken);
+        }
+      } catch (popupError: any) {
+        // If popup blocked or failed, use redirect
+        if (
+          popupError.code === 'auth/popup-blocked' ||
+          popupError.code === 'auth/popup-closed-by-user' ||
+          popupError.code === 'auth/cancelled-popup-request'
+        ) {
+          await signInWithRedirect(auth, googleProvider);
+        } else {
+          throw popupError;
+        }
       }
     } catch (error) {
       console.error("Login failed:", error);
@@ -55,9 +82,11 @@ export default function App() {
     setAuthStep('login');
   };
 
-  if (loading) return <div className="min-h-screen bg-[#0A0B10] flex items-center justify-center">
-    <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-2xl shadow-blue-500/20"></div>
-  </div>;
+  if (loading) return (
+    <div className="min-h-screen bg-[#0A0B10] flex items-center justify-center">
+      <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-2xl shadow-blue-500/20"></div>
+    </div>
+  );
 
   if (!user || !accessToken) {
     return (
@@ -67,7 +96,7 @@ export default function App() {
           <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px]" />
         </div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           className="max-w-md w-full relative z-10"
@@ -83,26 +112,15 @@ export default function App() {
 
           <div className="bg-[#15161D] p-10 rounded-[3rem] border border-white/5 shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)] space-y-8">
             <div className="space-y-2">
-              <h2 className="text-2xl font-black italic uppercase tracking-tight">{user ? 'Authorization Required' : 'Secure Entrance'}</h2>
+              <h2 className="text-2xl font-black italic uppercase tracking-tight">
+                {user ? 'Authorization Required' : 'Secure Entrance'}
+              </h2>
               <p className="text-gray-500 text-sm font-medium">
-                {user 
-                  ? 'Connect your YouTube permissions to initiate content deployment.' 
-                  : 'Authenticated sessions only. Please provide your organizational credentials.'}
+                {user
+                  ? 'Connect your YouTube permissions to initiate content deployment.'
+                  : 'Sign in with your Google account to continue.'}
               </p>
             </div>
-            
-            {!user && (
-               <div className="space-y-4">
-                  <div className="space-y-2">
-                     <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest pl-2">Member ID</label>
-                     <input type="text" placeholder="name@creator.org" className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 px-6 text-sm outline-none focus:border-blue-500/30 transition-all placeholder:text-gray-800" />
-                  </div>
-                  <div className="space-y-2">
-                     <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest pl-2">Security Key</label>
-                     <input type="password" placeholder="••••••••" className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 px-6 text-sm outline-none focus:border-blue-500/30 transition-all placeholder:text-gray-800" />
-                  </div>
-               </div>
-            )}
 
             <div className="space-y-4 pt-2">
               <button
@@ -116,29 +134,15 @@ export default function App() {
                 </span>
               </button>
 
-              {user ? (
-                <button 
+              {user && (
+                <button
                   onClick={handleLogout}
                   className="w-full text-gray-600 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors py-2"
                 >
                   Terminate Current Session
                 </button>
-              ) : (
-                <div className="text-center pt-4 border-t border-white/5">
-                   <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest">Single Sign-On Architecture</p>
-                </div>
               )}
             </div>
-          </div>
-
-          <div className="mt-8 flex items-center justify-center gap-8 opacity-20 hover:opacity-100 transition-opacity">
-             <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[8px] font-black text-white uppercase tracking-widest">Network Live</span>
-             </div>
-             <div className="flex items-center gap-2">
-                <span className="text-[8px] font-black text-white uppercase tracking-widest">v2.4.0 Deployment</span>
-             </div>
           </div>
         </motion.div>
       </div>
@@ -146,10 +150,10 @@ export default function App() {
   }
 
   return (
-    <Layout 
-      user={user} 
-      activeTab={activeTab} 
-      setActiveTab={setActiveTab} 
+    <Layout
+      user={user}
+      activeTab={activeTab}
+      setActiveTab={setActiveTab}
       onLogout={handleLogout}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
