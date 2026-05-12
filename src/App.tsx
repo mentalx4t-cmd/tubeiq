@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import { auth, googleProvider } from './lib/firebase';
-import { signInWithRedirect, signInWithPopup, getRedirectResult, onAuthStateChanged, User, GoogleAuthProvider, signOut } from 'firebase/auth';
+import {
+  signInWithRedirect,
+  getRedirectResult,
+  onAuthStateChanged,
+  User,
+  GoogleAuthProvider,
+  signOut
+} from 'firebase/auth';
 import { Layout } from './components/Layout';
 import { Home } from './components/tabs/Home';
 import { Trending } from './components/tabs/Trending';
@@ -8,15 +15,15 @@ import { Upload } from './components/tabs/Upload';
 import { Audit } from './components/tabs/Audit';
 import { DailyIdeas } from './components/tabs/DailyIdeas';
 import { ChatSphere } from './components/ChatSphere';
-import { LogIn, Youtube } from 'lucide-react';
+import { Youtube } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(localStorage.getItem('yt_access_token'));
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
-  const [authStep, setAuthStep] = useState<'login' | 'youtube'>('login');
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     const handleTokenUpdate = (event: any) => {
@@ -27,62 +34,47 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Handle redirect result when user comes back
-    getRedirectResult(auth).then((result) => {
-      if (result) {
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        if (credential?.accessToken) {
-          setAccessToken(credential.accessToken);
-          localStorage.setItem('yt_access_token', credential.accessToken);
+    async function init() {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          const credential = GoogleAuthProvider.credentialFromResult(result);
+          if (credential?.accessToken) {
+            localStorage.setItem('yt_access_token', credential.accessToken);
+            setAccessToken(credential.accessToken);
+          }
+        } else {
+          const stored = localStorage.getItem('yt_access_token');
+          if (stored) setAccessToken(stored);
         }
+      } catch (error) {
+        console.error('Redirect result error:', error);
       }
-    }).catch((error) => {
-      console.error('Redirect result error:', error);
-    });
 
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      if (u) setAuthStep('youtube');
-      setLoading(false);
-    });
-    return unsubscribe;
+      const unsubscribe = onAuthStateChanged(auth, (u) => {
+        setUser(u);
+        setLoading(false);
+      });
+
+      return unsubscribe;
+    }
+
+    init();
   }, []);
 
   const handleLogin = async () => {
-    try {
-      // Try popup first, fall back to redirect on mobile
-      try {
-        const result = await signInWithPopup(auth, googleProvider);
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        if (credential?.accessToken) {
-          setAccessToken(credential.accessToken);
-          localStorage.setItem('yt_access_token', credential.accessToken);
-        }
-      } catch (popupError: any) {
-        // If popup blocked or failed, use redirect
-        if (
-          popupError.code === 'auth/popup-blocked' ||
-          popupError.code === 'auth/popup-closed-by-user' ||
-          popupError.code === 'auth/cancelled-popup-request'
-        ) {
-          await signInWithRedirect(auth, googleProvider);
-        } else {
-          throw popupError;
-        }
-      }
-    } catch (error) {
-      console.error("Login failed:", error);
-    }
+    setRedirecting(true);
+    await signInWithRedirect(auth, googleProvider);
   };
 
   const handleLogout = () => {
     signOut(auth);
     localStorage.removeItem('yt_access_token');
     setAccessToken(null);
-    setAuthStep('login');
+    setUser(null);
   };
 
-  if (loading) return (
+  if (loading || redirecting) return (
     <div className="min-h-screen bg-[#0A0B10] flex items-center justify-center">
       <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-2xl shadow-blue-500/20"></div>
     </div>
@@ -104,45 +96,38 @@ export default function App() {
           <div className="text-center space-y-4 mb-12">
             <div className="inline-flex items-center gap-3 px-4 py-2 bg-blue-600/10 rounded-full border border-blue-600/20 mb-4">
               <Youtube className="w-4 h-4 text-blue-400" />
-              <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Enterprise Creator Suite</span>
+              <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">
+                Enterprise Creator Suite
+              </span>
             </div>
-            <h1 className="text-6xl font-black tracking-tighter italic uppercase leading-none">Tube<span className="text-blue-600">IQ</span></h1>
-            <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Neural Optimization & Competitive Intelligence</p>
+            <h1 className="text-6xl font-black tracking-tighter italic uppercase leading-none">
+              Tube<span className="text-blue-600">IQ</span>
+            </h1>
+            <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">
+              Neural Optimization & Competitive Intelligence
+            </p>
           </div>
 
           <div className="bg-[#15161D] p-10 rounded-[3rem] border border-white/5 shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)] space-y-8">
             <div className="space-y-2">
               <h2 className="text-2xl font-black italic uppercase tracking-tight">
-                {user ? 'Authorization Required' : 'Secure Entrance'}
+                Secure Entrance
               </h2>
               <p className="text-gray-500 text-sm font-medium">
-                {user
-                  ? 'Connect your YouTube permissions to initiate content deployment.'
-                  : 'Sign in with your Google account to continue.'}
+                Sign in with your Google account to continue.
               </p>
             </div>
 
-            <div className="space-y-4 pt-2">
-              <button
-                onClick={handleLogin}
-                className="w-full relative group overflow-hidden bg-white text-black font-black py-5 px-6 rounded-2xl transition-all shadow-xl flex items-center justify-center gap-3 uppercase italic tracking-tighter"
-              >
-                <div className="absolute inset-0 bg-blue-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                <span className="relative z-10 flex items-center gap-3 group-hover:text-white">
-                  <Youtube className="w-5 h-5 fill-current" />
-                  Connect with YouTube
-                </span>
-              </button>
-
-              {user && (
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-gray-600 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors py-2"
-                >
-                  Terminate Current Session
-                </button>
-              )}
-            </div>
+            <button
+              onClick={handleLogin}
+              className="w-full relative group overflow-hidden bg-white text-black font-black py-5 px-6 rounded-2xl transition-all shadow-xl flex items-center justify-center gap-3 uppercase italic tracking-tighter"
+            >
+              <div className="absolute inset-0 bg-blue-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+              <span className="relative z-10 flex items-center gap-3 group-hover:text-white">
+                <Youtube className="w-5 h-5 fill-current" />
+                Connect with YouTube
+              </span>
+            </button>
           </div>
         </motion.div>
       </div>
