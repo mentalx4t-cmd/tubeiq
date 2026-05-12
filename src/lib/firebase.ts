@@ -19,11 +19,10 @@ export const auth = getAuth(app);
 export const db = getFirestore(app, firestoreDatabaseId);
 
 export const googleProvider = new GoogleAuthProvider();
-// YouTube OAuth scopes
+// Add YouTube Scopes
 googleProvider.addScope('https://www.googleapis.com/auth/youtube.readonly');
 googleProvider.addScope('https://www.googleapis.com/auth/youtube.upload');
 googleProvider.addScope('https://www.googleapis.com/auth/youtube.force-ssl');
-googleProvider.addScope('https://www.googleapis.com/auth/yt-analytics.readonly');
 googleProvider.setCustomParameters({
   'access_type': 'offline',
   'prompt': 'consent',
