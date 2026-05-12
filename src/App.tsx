@@ -67,7 +67,7 @@ export default function App() {
           <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px]" />
         </div>
 
-        <motion.div
+        <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           className="max-w-md w-full relative z-10"
@@ -85,23 +85,23 @@ export default function App() {
             <div className="space-y-2">
               <h2 className="text-2xl font-black italic uppercase tracking-tight">{user ? 'Authorization Required' : 'Secure Entrance'}</h2>
               <p className="text-gray-500 text-sm font-medium">
-                {user
-                  ? 'Connect your YouTube permissions to initiate content deployment.'
+                {user 
+                  ? 'Connect your YouTube permissions to initiate content deployment.' 
                   : 'Authenticated sessions only. Please provide your organizational credentials.'}
               </p>
             </div>
-
+            
             {!user && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest pl-2">Member ID</label>
-                  <input type="text" placeholder="name@creator.org" className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 px-6 text-sm outline-none focus:border-blue-500/30 transition-all placeholder:text-gray-800" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest pl-2">Security Key</label>
-                  <input type="password" placeholder="••••••••" className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 px-6 text-sm outline-none focus:border-blue-500/30 transition-all placeholder:text-gray-800" />
-                </div>
-              </div>
+               <div className="space-y-4">
+                  <div className="space-y-2">
+                     <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest pl-2">Member ID</label>
+                     <input type="text" placeholder="name@creator.org" className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 px-6 text-sm outline-none focus:border-blue-500/30 transition-all placeholder:text-gray-800" />
+                  </div>
+                  <div className="space-y-2">
+                     <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest pl-2">Security Key</label>
+                     <input type="password" placeholder="••••••••" className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 px-6 text-sm outline-none focus:border-blue-500/30 transition-all placeholder:text-gray-800" />
+                  </div>
+               </div>
             )}
 
             <div className="space-y-4 pt-2">
@@ -117,7 +117,7 @@ export default function App() {
               </button>
 
               {user ? (
-                <button
+                <button 
                   onClick={handleLogout}
                   className="w-full text-gray-600 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors py-2"
                 >
@@ -125,20 +125,20 @@ export default function App() {
                 </button>
               ) : (
                 <div className="text-center pt-4 border-t border-white/5">
-                  <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest">Single Sign-On Architecture</p>
+                   <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest">Single Sign-On Architecture</p>
                 </div>
               )}
             </div>
           </div>
 
           <div className="mt-8 flex items-center justify-center gap-8 opacity-20 hover:opacity-100 transition-opacity">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[8px] font-black text-white uppercase tracking-widest">Network Live</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[8px] font-black text-white uppercase tracking-widest">v2.4.0 Deployment</span>
-            </div>
+             <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[8px] font-black text-white uppercase tracking-widest">Network Live</span>
+             </div>
+             <div className="flex items-center gap-2">
+                <span className="text-[8px] font-black text-white uppercase tracking-widest">v2.4.0 Deployment</span>
+             </div>
           </div>
         </motion.div>
       </div>
@@ -146,10 +146,10 @@ export default function App() {
   }
 
   return (
-    <Layout
-      user={user}
-      activeTab={activeTab}
-      setActiveTab={setActiveTab}
+    <Layout 
+      user={user} 
+      activeTab={activeTab} 
+      setActiveTab={setActiveTab} 
       onLogout={handleLogout}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
