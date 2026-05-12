@@ -23,18 +23,14 @@ export default function App() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
-  const [redirecting, setRedirecting] = useState(false);
-
-  useEffect(() => {
-    const handleTokenUpdate = (event: any) => {
-      setAccessToken(event.detail);
-    };
-    window.addEventListener('yt_token_updated', handleTokenUpdate);
-    return () => window.removeEventListener('yt_token_updated', handleTokenUpdate);
-  }, []);
 
   useEffect(() => {
     async function init() {
+      // First check stored token
+      const stored = localStorage.getItem('yt_access_token');
+      if (stored) setAccessToken(stored);
+
+      // Then check if we just came back from a redirect
       try {
         const result = await getRedirectResult(auth);
         if (result) {
@@ -43,27 +39,22 @@ export default function App() {
             localStorage.setItem('yt_access_token', credential.accessToken);
             setAccessToken(credential.accessToken);
           }
-        } else {
-          const stored = localStorage.getItem('yt_access_token');
-          if (stored) setAccessToken(stored);
         }
       } catch (error) {
         console.error('Redirect result error:', error);
       }
 
-      const unsubscribe = onAuthStateChanged(auth, (u) => {
+      // Then listen for auth state
+      onAuthStateChanged(auth, (u) => {
         setUser(u);
         setLoading(false);
       });
-
-      return unsubscribe;
     }
 
     init();
   }, []);
 
   const handleLogin = async () => {
-    setRedirecting(true);
     await signInWithRedirect(auth, googleProvider);
   };
 
@@ -74,11 +65,37 @@ export default function App() {
     setUser(null);
   };
 
-  if (loading || redirecting) return (
+  if (loading) return (
     <div className="min-h-screen bg-[#0A0B10] flex items-center justify-center">
-      <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-2xl shadow-blue-500/20"></div>
+      <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
+
+  // User logged in but no access token yet
+  if (user && !accessToken) {
+    return (
+      <div className="min-h-screen bg-[#0A0B10] flex flex-col items-center justify-center p-6 text-white">
+        <div className="bg-[#15161D] p-10 rounded-[3rem] border border-white/5 max-w-md w-full text-center space-y-6">
+          <Youtube className="w-12 h-12 text-blue-400 mx-auto" />
+          <h2 className="text-2xl font-black italic uppercase">YouTube Access Required</h2>
+          <p className="text-gray-500 text-sm">We need permission to access your YouTube channel.</p>
+          <button
+            onClick={handleLogin}
+            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 px-6 rounded-2xl transition-all flex items-center justify-center gap-3"
+          >
+            <Youtube className="w-5 h-5" />
+            Grant YouTube Access
+          </button>
+          <button
+            onClick={handleLogout}
+            className="text-gray-600 text-xs hover:text-white transition-colors"
+          >
+            Sign out and try different account
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!user || !accessToken) {
     return (
