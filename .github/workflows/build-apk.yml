@@ -54,4 +54,3 @@ jobs:
           git config user.email '${{ github.actor }}@users.github.com'
           git add ${{ env.build_output_path }}/ -f
           git diff --cached --quiet && echo "No changes to commit" || (git commit -m "ci: upload build outputs - ${{ env.date_today }} [skip ci]" && git push)
-          
